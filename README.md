@@ -34,16 +34,19 @@ ahy 框架的前端模板仓：Vue 3 组件与页面模板，发 `.vue` 源码�
 
 ## 怎么引进
 
-各后台在 `package.json` 里写 git 地址加版本号，npm 直接从 git 装：
+各后台在 `package.json` 里写 git 地址，npm 直接从 git 装。**锁到完整 commit sha，不要写 tag 名**——
+tag 可以移动，写 tag 会让同一份 lock 在不同时间装出不同代码；写 commit 才能复现。仓是公开的，匿名 https 就能拉：
 
 ```json
-"@aohoyo/ahy-web": "git+ssh://git@github.com/aohoyo/ahy-web.git#v0.1.0"
+"@aohoyo/ahy-web": "git+https://github.com/aohoyo/ahy-web.git#<commit-sha>"
 ```
 
 使用方不用为本包改任何构建配置。两种构建：
 
 - **Vite + Element Plus 按需自动引入**（`unplugin-vue-components`，aohoyo 后台的做法）：已核实，生产构建和开发模式都跑通，不加 `optimizeDeps` 配置，加了排除也一样。
-- **rspack + vue-loader + Element Plus 全量注册**（lanta 后台的做法）：lanta 后台接入时验证，结果补记在这里。
+- **rspack + vue-loader + Element Plus 全量注册**（lanta 后台的做法）：已核实，`npm ci` 装通、生产构建零错。
+  注意包内 `.js` 的相对导入不带扩展名，所以包的 `package.json` **不能**写 `"type": "module"`
+  （写了 rspack 会按严格 ESM 解析，`../logic/sort` 这种导入直接报模块找不到）。
 
 两条使用方要知道的事：
 
