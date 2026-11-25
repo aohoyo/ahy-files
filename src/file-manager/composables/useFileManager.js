@@ -142,7 +142,14 @@ export function useFileManager(props) {
   const treeRows = computed(() => {
     const rows = [];
     const walk = (dir, depth) => {
-      const subs = tree.dirs[dir];
+      let subs = tree.dirs[dir];
+      // 可写根永远钉在第一层：七牛没有空目录的概念，可写根还没放过东西时（files/ 一件都没有的全新桶）
+      // 根视图里没有它，没有这个入口用户就传不了第一批文件
+      if (dir === "" && roots.value.length) {
+        const listed = subs ?? [];
+        const missing = roots.value.filter((r) => !listed.includes(r));
+        if (missing.length) subs = listed.concat(missing);
+      }
       rows.push({
         key: dir,
         name: dir ? baseName(dir) : "全部文件",
