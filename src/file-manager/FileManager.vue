@@ -1,7 +1,7 @@
 <script setup>
 // 文件管理器整页：工具栏、命令栏、左侧目录树、文件区、状态栏，加上传进度、右键菜单和几个对话框。
 // 它只认适配器（api），不直接调任何后端接口；状态都在这一个组件里，子组件经 provide/inject 取用。
-import { provide, ref } from "vue";
+import { onBeforeUnmount, onMounted, provide, ref } from "vue";
 import "./styles.css";
 import { useFileManager } from "./composables/useFileManager";
 import { FM_KEY } from "./composables/context";
@@ -17,6 +17,10 @@ import FmMoveDialog from "./components/FmMoveDialog.vue";
 import FmImageViewer from "./components/FmImageViewer.vue";
 
 defineOptions({ name: "FileManager" });
+
+// 快捷键挂在 document 上（见 onKeydown 的说明），组件卸载时摘掉
+onMounted(() => document.addEventListener("keydown", fm.onKeydown));
+onBeforeUnmount(() => document.removeEventListener("keydown", fm.onKeydown));
 
 const props = defineProps({
   // 适配器，必填。方法清单见 api.js
@@ -46,7 +50,6 @@ function takeFocus() {
     class="fm"
     :class="{ dropping: fm.dropping }"
     tabindex="-1"
-    @keydown="fm.onKeydown"
     @mousedown="takeFocus"
     @dragenter="fm.onDragEnter"
     @dragover="fm.onDragOver"

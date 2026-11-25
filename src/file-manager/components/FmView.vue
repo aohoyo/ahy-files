@@ -20,6 +20,9 @@ const box = ref(null);
 let drag = null;
 let raf = 0;
 
+// 就地改名提交后把焦点交还给文件区（输入框没了，焦点会落回 body）
+fm.setViewFocus(() => el.value?.focus({ preventScroll: true }));
+
 watch(
   () => fm.path,
   () => el.value && (el.value.scrollTop = 0),

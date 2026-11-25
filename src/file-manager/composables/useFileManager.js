@@ -79,6 +79,9 @@ export function useFileManager(props) {
   // 就地改名的状态：正在改哪一项、输入框里的字。isNew 是新建文件夹还没提交
   const renaming = ref(null);
   const renameRetry = ref(0);
+  // 文件区给回来的「把焦点交还给我」：改名提交后调用，免得焦点落在 body 上
+  let viewFocus = null;
+  const setViewFocus = (fn) => (viewFocus = fn);
 
   // 当前显示的条目：搜过的、排好序的。没提交的新文件夹也在里面，按默认名字排在它该在的位置。
   const visible = computed(() => {
@@ -407,9 +410,12 @@ export function useFileManager(props) {
       else await api.rename({ key: r.key, to });
       renaming.value = null;
       await afterWrite([path.value], [to]);
+      // 输入框随改名一起没了，焦点会落回 body：交还给文件区，接着双击、按快捷键都还管用
+      viewFocus?.();
     } catch (e) {
       renaming.value = null;
       toast(e?.message || "没有改成，请稍后重试", "error");
+      viewFocus?.();
     } finally {
       r.saving = false;
     }
@@ -606,6 +612,8 @@ export function useFileManager(props) {
   });
 
   // ---- 快捷键 ----
+  // 挂在 document 上而不是只挂组件根：点了勾选框、对话框按钮之后焦点会挪到别处，
+  // 只挂组件根时 F2 / Delete 就接不到了。但输入框与弹层里的按键不抢。
   function onKeydown(ev) {
     const t = ev.target;
     if (ev.key === "Escape") {
@@ -614,6 +622,8 @@ export function useFileManager(props) {
     }
     // 输入框、文本框里的按键留给它们自己（就地改名的 Enter、Esc 已在输入框里处理）
     if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    // 弹层里的按键不抢：文件管理器的对话框、Element 自己的下拉与提示都可能盖在它上面
+    if (t instanceof Element && !t.closest(".fm") && t.closest(".el-overlay, .el-popper, .fm-menu")) return;
     const mod = ev.ctrlKey || ev.metaKey;
     const key = ev.key.toLowerCase();
     if (mod && key === "a") {
@@ -731,6 +741,7 @@ export function useFileManager(props) {
     startNewFolder,
     commitRename,
     cancelRename,
+    setViewFocus,
     // 打开、下载
     open,
     download,
