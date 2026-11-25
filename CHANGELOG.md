@@ -29,6 +29,8 @@
 
 - Element Plus 的引入统一走 `element-plus/es`，不再从裸的 `element-plus` 引：按需自动引入的 Vite 工程里，
   裸入口没有被预构建，开发模式下会整页起不来。用到的 `ElDialog`、`ElMessage` 连同样式一起显式引入。
+- 去掉 package.json 里的 `"type": "module"`：rspack 会因此把包里的 `.js` 当严格 ESM，相对导入不带扩展名直接解析失败；
+  去掉后 rspack 与 Vite 都按各自默认的解析规则处理，两种打包器都不用改使用方的配置。
 
 ## [0.1.0-骨架] - 2026-11-25
 
