@@ -46,9 +46,19 @@ export function useFileManager(props) {
   const prefs = loadPrefs();
 
   // ---- 能做什么 ----
-  const roots = computed(() => props.writableRoots.map(toDir));
+  // 可写根：入参显式给了就用它；没给（用默认值）就听后端随列目录下发的，改配置只改一边
+  const serverRoots = ref(null);
+  const roots = computed(() => {
+    const fromProps = Array.isArray(props.writableRoots) ? props.writableRoots : null;
+    const list = fromProps && fromProps.length ? fromProps : serverRoots.value || [];
+    return list.map(toDir);
+  });
   const writable = computed(() => isWritable(path.value, roots.value));
-  const can = (action) => typeof props.can !== "function" || !!props.can(action);
+  // 权限判断：不传 can 就全开（各后台自己决定要不要管）；传了就按它的答复来。
+  // 动作名收成白名单，未知动作一律 false——组件以后新增动作，不会被老的使用方静默放行（交叉审 P2）。
+  const ACTIONS = new Set(["upload", "create", "rename", "move", "copy", "delete", "download"]);
+  const can = (action) =>
+    ACTIONS.has(action) && (typeof props.can !== "function" || !!props.can(action));
   const may = (action) => can(action) && (!WRITE_ACTIONS.has(action) || writable.value);
   // 命令置灰的原因：先说权限，再说只读
   const why = (action) => (!can(action) ? "没有权限" : !writable.value ? "这个目录只读" : "");
@@ -118,6 +128,7 @@ export function useFileManager(props) {
       }
       marker.value = r.marker || "";
       if (r.limits) limits.value = r.limits;
+      if (Array.isArray(r.writableRoots)) serverRoots.value = r.writableRoots;
       selection.retain(new Set(entries.value.map((e) => e.key)));
       // 左侧目录树里这一层跟着列表走，省一次请求
       tree.dirs[path.value] = entries.value.filter((e) => e.dir).map((e) => e.key);
@@ -276,6 +287,8 @@ export function useFileManager(props) {
 
   async function copyLink(list) {
     if (!list.length) return;
+    // 产出的是下载地址，和「下载」同口径过权限（交叉审 P2：原来这条没走 can）
+    if (!can("download")) return toast("没有权限复制下载链接", "error");
     const links = [];
     for (const e of list) {
       try {
@@ -607,7 +620,7 @@ export function useFileManager(props) {
       delete: state(many && may("delete"), many ? why("delete") : "先选中要删除的项目"),
       more: state(many || writable.value, many ? "" : "这个目录只读"),
       download: state(one && !sel[0].dir && can("download"), one && sel[0].dir ? "文件夹打包下载放在下一版本" : many > 1 ? "一次下载一个文件，打包下载放在下一版本" : "没有权限"),
-      link: state(files > 0, many && !files ? "文件夹没有下载链接" : ""),
+      link: state(files > 0 && can("download"), many && !files ? "文件夹没有下载链接" : !can("download") ? "没有权限" : ""),
     };
   });
 
@@ -622,8 +635,16 @@ export function useFileManager(props) {
     }
     // 输入框、文本框里的按键留给它们自己（就地改名的 Enter、Esc 已在输入框里处理）
     if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-    // 弹层里的按键不抢：文件管理器的对话框、Element 自己的下拉与提示都可能盖在它上面
-    if (t instanceof Element && !t.closest(".fm") && t.closest(".el-overlay, .el-popper, .fm-menu")) return;
+    // 焦点不在文件管理器里就不抢（交叉审 P2）：挂在 document 上是为了勾选框、关掉的对话框之后
+    // 还能按 F2/Delete，但注意力若在后台别处（左侧导航、页头、别的弹层），按 Delete / Ctrl+V
+    // 不该动文件管理器里残留的选择——那会误删或误粘。
+    const inFm = t instanceof Element && !!t.closest(".fm");
+    const inDialog = t instanceof Element && !!t.closest(".fm-dialog, .fm-viewer, .fm-menu");
+    if (!inFm && !inDialog) {
+      const active = document.activeElement;
+      const activeInFm = active instanceof Element && !!active.closest(".fm");
+      if (!activeInFm) return;
+    }
     const mod = ev.ctrlKey || ev.metaKey;
     const key = ev.key.toLowerCase();
     if (mod && key === "a") {
