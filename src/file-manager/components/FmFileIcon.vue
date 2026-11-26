@@ -1,7 +1,11 @@
 <script setup>
 // 文件的图标：图片直接显示缩略图，其余按类型显示 Fluent 图标。
 // 缩略图由对象存储实时生成，按显示宽度的两倍取图，高分屏才清晰；取不到就退回图片图标，不影响别的条目。
+// 用 el-image 而不是裸 img：懒加载、加载占位、失败兜底都是现成的（2026-11-26 创始人定）。
 import { computed, ref, watch } from "vue";
+import { ElImage } from "element-plus/es";
+// 组件和它的样式一起引：按需自动引入样式的项目只处理它自己的页面，不会管依赖包里的组件
+import "element-plus/es/components/image/style/css";
 import { iconSvg } from "../icons";
 import { typeOf } from "../logic/sort";
 import { useFm } from "../composables/context";
@@ -37,19 +41,21 @@ watch(
   { immediate: true },
 );
 
-const html = computed(() =>
-  type.value.image && src.value && !failed.value
-    ? `<img src="${src.value.replace(/"/g, "%22")}" alt="" loading="lazy" decoding="async">`
-    : iconSvg(type.value.icon),
-);
+const icon = computed(() => iconSvg(type.value.icon));
+const showThumb = computed(() => type.value.image && !!src.value && !failed.value);
+const box = computed(() => ({ width: props.size + "px", height: props.size + "px" }));
 </script>
 
 <template>
-  <!-- 图片加载失败时把缩略图换成类型图标：error 事件不冒泡，所以在捕获阶段接 -->
-  <span
-    class="fm-ficon"
-    :style="{ width: size + 'px', height: size + 'px', color: type.color }"
-    v-html="html"
-    @error.capture="failed = true"
-  />
+  <span class="fm-ficon" :style="{ ...box, color: type.color }">
+    <ElImage
+      v-if="showThumb"
+      :src="src"
+      fit="cover"
+      lazy
+      :style="box"
+      @error="failed = true"
+    />
+    <span v-else class="fm-ficon-svg" v-html="icon" />
+  </span>
 </template>

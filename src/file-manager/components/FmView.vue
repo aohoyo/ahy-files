@@ -66,7 +66,7 @@ function onDblclick(ev) {
 function onContextmenu(ev) {
   const key = keyOf(ev);
   const entry = key ? entryOf(key) : null;
-  if (entry && !entry.pending) fm.entryMenu(entry, ev);
+  if (entry) fm.entryMenu(entry, ev);
   else if (!ev.target.closest("input")) fm.blankMenu(ev);
 }
 
@@ -196,7 +196,7 @@ onBeforeUnmount(onUp);
         <FmFileIcon :entry="e" :size="48" />
         <div class="fm-txt">
           <FmLabel :entry="e" />
-          <div v-if="!e.pending" class="fm-sub">{{ e.dir ? "文件夹" : `${fm.typeOf(e).label} · ${fmtSize(e.size)}` }}</div>
+          <div class="fm-sub">{{ e.dir ? "文件夹" : `${fm.typeOf(e).label} · ${fmtSize(e.size)}` }}</div>
         </div>
       </div>
     </div>

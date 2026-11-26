@@ -13,6 +13,7 @@ import FmStatusBar from "./components/FmStatusBar.vue";
 import FmContextMenu from "./components/FmContextMenu.vue";
 import FmUploadPanel from "./components/FmUploadPanel.vue";
 import FmDeleteDialog from "./components/FmDeleteDialog.vue";
+import FmRenameDialog from "./components/FmRenameDialog.vue";
 import FmMoveDialog from "./components/FmMoveDialog.vue";
 import FmImageViewer from "./components/FmImageViewer.vue";
 
@@ -70,6 +71,7 @@ function takeFocus() {
     <FmUploadPanel />
     <FmContextMenu />
     <FmDeleteDialog />
+    <FmRenameDialog />
     <FmMoveDialog />
     <FmImageViewer />
 

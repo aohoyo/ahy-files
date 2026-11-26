@@ -146,20 +146,26 @@ export function useUploads({ api, onSettled }) {
     return new Error(`上传失败：对象存储返回 ${xhr.status}${detail ? " " + detail : ""}`);
   }
 
-  // 取消：在传的中断，排着队的作废；已经传完的留在存储里。
+  // 取消：在传的中断，排着队的作废；已经传完的留在存储里。浮层不关——
+  // 记录留在原地，使用者看得到哪些传完了、哪些被取消了（2026-11-26 创始人定）。
   function cancel() {
     for (const t of tasks.value) if (t.status === "wait") t.status = "canceled";
     for (const c of controllers) c.abort();
-    panel.open = false;
   }
 
-  // 关掉浮层，清掉这一批的记录。
+  // 收起或关掉浮层只动浮层本身；记录留着，命令栏的上传入口能再点回来。
   function close() {
+    panel.open = false;
+    panel.small = false;
+  }
+
+  // 真正清空这批记录（上传入口的「清空记录」用）。还在传时不清。
+  function clear() {
     if (summary.value.working) return;
     tasks.value = [];
     panel.open = false;
     panel.small = false;
   }
 
-  return { tasks, panel, summary, enqueue, cancel, close };
+  return { tasks, panel, summary, enqueue, cancel, close, clear };
 }

@@ -88,18 +88,17 @@ export function useFileManager(props) {
   let viewFocus = null;
   const setViewFocus = (fn) => (viewFocus = fn);
 
-  // 当前显示的条目：搜过的、排好序的。没提交的新文件夹也在里面，按默认名字排在它该在的位置。
-  const visible = computed(() => {
-    const list = entries.value.filter((e) => matchQuery(e, query.value));
-    if (renaming.value?.isNew) {
-      list.push({ key: NEW_KEY, name: renaming.value.name, dir: true, size: 0, mtime: 0, pending: true });
-    }
-    return sortEntries(list, sort.value);
-  });
-  const visibleKeys = computed(() => visible.value.filter((e) => !e.pending).map((e) => e.key));
+  // 当前显示的条目：搜过的、排好序的。新建文件夹走弹窗输入，列表里不出占位条目。
+  const visible = computed(() =>
+    sortEntries(
+      entries.value.filter((e) => matchQuery(e, query.value)),
+      sort.value,
+    ),
+  );
+  const visibleKeys = computed(() => visible.value.map((e) => e.key));
   const selected = computed(() => {
     const ks = selection.keys.value;
-    return visible.value.filter((e) => !e.pending && ks.has(e.key));
+    return visible.value.filter((e) => ks.has(e.key));
   });
   const selectedFiles = computed(() => selected.value.filter((e) => !e.dir));
 
@@ -252,10 +251,9 @@ export function useFileManager(props) {
 
   // ---- 打开、下载、复制链接 ----
   const viewer = ref(null);
-  const viewerImages = computed(() => visible.value.filter((e) => !e.pending && !e.dir && typeOf(e).image));
+  const viewerImages = computed(() => visible.value.filter((e) => !e.dir && typeOf(e).image));
 
   function open(entry) {
-    if (entry.pending) return;
     if (entry.dir) nav.go(entry.key);
     else if (typeOf(entry).image) viewer.value = { key: entry.key };
     else download([entry]);
@@ -369,7 +367,7 @@ export function useFileManager(props) {
   const takenIn = (name) => entries.value.some((e) => e.name === name);
 
   function startRename(entry = selected.value.length === 1 ? selected.value[0] : null) {
-    if (!entry || entry.pending || renaming.value || !may("rename")) return;
+    if (!entry || renaming.value || !may("rename")) return;
     renaming.value = { key: entry.key, name: entry.name, value: entry.name, dir: entry.dir, isNew: false };
   }
 
@@ -537,15 +535,19 @@ export function useFileManager(props) {
   const sortMenu = () => SORTS.map((s) => ({ icon: "sort", label: s.label, checked: sort.value.key === s.key, onClick: () => setSort(s.key) }));
   const viewMenu = () =>
     VIEWS.map(([k, label]) => ({ icon: VIEW_ICON[k] || "viewGrid", label, checked: view.value === k, onClick: () => (view.value = k) }));
+  // 上传入口：除了选文件，还能把收起的上传记录重新调出来（关掉浮层不等于丢了记录）
   const uploadMenu = () => [
     { icon: "document", label: "上传文件", onClick: pickFiles },
     { icon: "folder", label: "上传文件夹", onClick: pickFolder },
+    ...(uploads.tasks.value.length
+      ? ["-", { icon: "upload", label: `上传记录（${uploads.tasks.value.length}）`, onClick: () => (uploads.panel.open = true) }]
+      : []),
   ];
   const selectAll = () => selection.set(visibleKeys.value);
 
   // 右键点在一条上：它不在当前选择里就先单独选中它，菜单对整批选择生效
   function entryMenu(entry, ev) {
-    if (!entry.pending && !selection.keys.value.has(entry.key)) selection.only(entry.key);
+    if (!selection.keys.value.has(entry.key)) selection.only(entry.key);
     const many = selected.value.length > 1;
     openMenu(ev.clientX, ev.clientY, [
       entry.dir

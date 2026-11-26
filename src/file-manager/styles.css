@@ -342,13 +342,23 @@
   display: inline-flex;
   flex-shrink: 0;
 }
-.fm-ficon svg,
-.fm-ficon img {
+.fm-ficon > .fm-ficon-svg,
+.fm-ficon > .el-image {
   display: block;
   width: 100%;
   height: 100%;
 }
-.fm-ficon img {
+.fm-ficon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* el-image 有自己的外层与内部 img，两层都要撑满并保留圆角 */
+.fm-ficon .el-image,
+.fm-ficon .el-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
   border-radius: 3px;
   object-fit: cover;
   background: var(--el-fill-color-light);
@@ -581,10 +591,9 @@
   opacity: 1;
 }
 
-/* 列表：小图标加文件名，多栏排 */
+/* 列表：一行一个，通栏竖排（和详细信息同构，只是不列表头）；
+ * 小图标才是多栏网格，两者不能长一个样（2026-11-26 创始人指出） */
 .fm-flow {
-  column-width: 280px;
-  column-gap: 4px;
   padding: 8px 12px;
 }
 .fm-lrow {
@@ -594,7 +603,6 @@
   height: 32px;
   padding: 0 8px;
   border-radius: 4px;
-  break-inside: avoid;
 }
 .fm-lrow:hover {
   background: var(--el-fill-color-light);
@@ -658,24 +666,6 @@
   color: var(--el-text-color-secondary);
   font-size: 12px;
 }
-.fm-ptile .fm-txt .fm-rename {
-  width: 100%;
-}
-
-/* 就地改名 */
-.fm-rename {
-  height: 26px;
-  flex: 1;
-  min-width: 0;
-  padding: 0 6px;
-  border: 1px solid var(--el-color-primary);
-  border-radius: 2px;
-  outline: none;
-  background: var(--el-bg-color);
-  color: inherit;
-  font: inherit;
-}
-
 /* 框选 */
 .fm-marquee {
   position: absolute;
@@ -734,27 +724,6 @@
   border-top: 1px solid var(--el-border-color-lighter);
   color: var(--el-text-color-regular);
   font-size: 12.5px;
-}
-.fm-status .fm-push {
-  display: flex;
-  justify-content: flex-end;
-  gap: 2px;
-}
-.fm-sbtn {
-  width: 28px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 3px;
-  background: none;
-  color: var(--el-text-color-regular);
-  cursor: pointer;
-}
-.fm-sbtn:hover,
-.fm-sbtn.on {
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-primary);
 }
 .fm-more {
   padding: 0;

@@ -32,10 +32,12 @@ describe("useUploads 适配器自己传", () => {
     expect(settled[0].list.length).toBe(2);
     expect([...settled[0].dirs].sort()).toEqual(["", "files/", "files/a/", "files/a/b/"]);
     expect(q.summary.value).toMatchObject({ total: 2, done: 2, failed: 0, working: false, percent: 100 });
-    // 没传完时不让关；传完了能关
+    // 关浮层只收浮层，记录留着（关掉后还能从上传入口点回来）；清空是单独的动作
     q.close();
-    expect(q.tasks.value.length).toBe(0);
     expect(q.panel.open).toBe(false);
+    expect(q.tasks.value.length).toBe(2);
+    q.clear();
+    expect(q.tasks.value.length).toBe(0);
   });
 
   it("适配器报错的记成失败，带着原因；同批其他文件照传", async () => {
@@ -203,7 +205,8 @@ describe("useUploads 按表单直传", () => {
     sent[0].respond(200, "{}");
     await tick();
     q.cancel();
-    expect(q.panel.open).toBe(false);
+    // 取消后浮层不关：记录留着，看得到哪些取消了（2026-11-26 改）
+    expect(q.panel.open).toBe(true);
     await settle(q);
     const statuses = q.tasks.value.map((t) => t.status);
     expect(statuses.filter((s) => s === "canceled").length).toBe(4);
