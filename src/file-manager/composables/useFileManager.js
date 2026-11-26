@@ -5,7 +5,7 @@ import "element-plus/es/components/message/style/css";
 import { useNavigation } from "./useNavigation";
 import { useSelection } from "./useSelection";
 import { useUploads } from "./useUploads";
-import { baseName, crumbs, extOf, isUnder, isWritable, parentDir, toDir } from "../logic/path";
+import { baseName, crumbs, extOf, isUnder, parentDir, toDir } from "../logic/path";
 import { checkName, copyName, uniqueName } from "../logic/naming";
 import { SORTS, matchQuery, sortEntries, typeOf } from "../logic/sort";
 import { fmtSize } from "../logic/format";
@@ -150,14 +150,7 @@ export function useFileManager(props) {
   const treeRows = computed(() => {
     const rows = [];
     const walk = (dir, depth) => {
-      let subs = tree.dirs[dir];
-      // 可写根永远钉在第一层：七牛没有空目录的概念，可写根还没放过东西时（files/ 一件都没有的全新桶）
-      // 根视图里没有它，没有这个入口用户就传不了第一批文件
-      if (dir === "" && roots.value.length) {
-        const listed = subs ?? [];
-        const missing = roots.value.filter((r) => !listed.includes(r));
-        if (missing.length) subs = listed.concat(missing);
-      }
+      const subs = tree.dirs[dir];
       rows.push({
         key: dir,
         name: dir ? baseName(dir) : "全部文件",
@@ -692,7 +685,8 @@ export function useFileManager(props) {
     up: nav.up,
     writable,
     writableRoots: [],
-    canWriteDir: (dir) => isWritable(dir, roots.value),
+    // 与 writable 同口径：不设目录白名单，任何目录都可作为移动、复制的目标（2026-11-26 创始人定）
+    canWriteDir: () => true,
     may,
     why,
     // 列表
