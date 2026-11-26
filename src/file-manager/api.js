@@ -129,8 +129,9 @@ export function createStorageApi(options = {}) {
         marker: d.marker || "",
         downloadBase: d.download_base || downloadBase,
         limits: d.limits || undefined,
-        // 可写根由后端下发（真源是服务端配置），前端不再自己写一份
+        // 可写根与保护名单由后端下发（真源是服务端配置），前端不再自己写一份
         writableRoots: Array.isArray(d.writable_roots) ? d.writable_roots : undefined,
+        protected: Array.isArray(d.protected) ? d.protected : undefined,
       };
     },
     async uploadTicket({ name, key }) {

@@ -59,7 +59,8 @@ const MENU = [
           <span class="draft">演示页 · 假数据</span>
           <label class="toggle"><input v-model="readOnly" type="checkbox" />只读账号</label>
         </div>
-        <FileManager :api="api" :can="can" />
+        <!-- 演示页的假适配器不下发可写根，这里显式传（和真后端下发的是同一份口径） -->
+        <FileManager :api="api" :can="can" :writableRoots="['files/']" />
       </div>
     </div>
   </div>

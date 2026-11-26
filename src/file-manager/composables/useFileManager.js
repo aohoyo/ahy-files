@@ -53,7 +53,10 @@ export function useFileManager(props) {
     const list = fromProps && fromProps.length ? fromProps : serverRoots.value || [];
     return list.map(toDir);
   });
-  const writable = computed(() => isWritable(path.value, roots.value));
+  // 保护名单同样后端下发：它在可写根里也照样只读（第二道锁）
+  const protectedDirs = ref([]);
+  const isProtectedDir = (dir) => protectedDirs.value.some((p) => isUnder(dir, toDir(p)));
+  const writable = computed(() => isWritable(path.value, roots.value) && !isProtectedDir(path.value));
   // 权限判断：不传 can 就全开（各后台自己决定要不要管）；传了就按它的答复来。
   // 动作名收成白名单，未知动作一律 false——组件以后新增动作，不会被老的使用方静默放行（交叉审 P2）。
   const ACTIONS = new Set(["upload", "create", "rename", "move", "copy", "delete", "download"]);
@@ -129,6 +132,7 @@ export function useFileManager(props) {
       marker.value = r.marker || "";
       if (r.limits) limits.value = r.limits;
       if (Array.isArray(r.writableRoots)) serverRoots.value = r.writableRoots;
+      if (Array.isArray(r.protected)) protectedDirs.value = r.protected;
       selection.retain(new Set(entries.value.map((e) => e.key)));
       // 左侧目录树里这一层跟着列表走，省一次请求
       tree.dirs[path.value] = entries.value.filter((e) => e.dir).map((e) => e.key);
