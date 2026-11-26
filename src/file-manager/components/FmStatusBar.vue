@@ -14,3 +14,27 @@ const fm = useFm();
     <button v-if="fm.hasMore" class="fm-more" :disabled="fm.loadingMore" @click="fm.loadMore()">加载更多</button>
   </div>
 </template>
+
+<style scoped>
+/* ---------- 状态栏 ---------- */
+.fm-status {
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 10px 0 14px;
+  background: var(--el-bg-color);
+  border-top: 1px solid var(--el-border-color-lighter);
+  color: var(--el-text-color-regular);
+  font-size: 12.5px;
+}
+.fm-more {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--el-color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+</style>

@@ -2,7 +2,7 @@
 // 演示页外壳：尺寸和配色照后台截图搭的示意框（深色侧栏 256、顶栏 64、标签栏 50），
 // 左侧菜单只是布景，不属于文件管理器。右上角的开关用来演示「没有权限时命令置灰」。
 import { computed, ref } from "vue";
-import { FileManager } from "@aohoyo/ahy-web";
+import { FileManager } from "@aohoyo/ahy-files";
 import { paths } from "../src/file-manager/icons/fluent.js";
 import { createFakeApi } from "./fakeApi.js";
 

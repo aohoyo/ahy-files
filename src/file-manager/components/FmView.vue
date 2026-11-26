@@ -2,6 +2,9 @@
 // 文件区：按当前视图画出条目，并统一处理点选、框选、双击、右键。
 // 各视图只负责画（条目带 data-key），事件都委托到这一层，六种视图就不用各写一遍。
 import { onBeforeUnmount, ref, watch } from "vue";
+import { ElButton } from "element-plus/es";
+// 组件和它的样式一起引：按需自动引入样式的项目只处理它自己的页面，不会管依赖包里的组件
+import "element-plus/es/components/button/style/css";
 import FmIcon from "./FmIcon.vue";
 import FmFileIcon from "./FmFileIcon.vue";
 import FmLabel from "./FmLabel.vue";
@@ -221,7 +224,7 @@ onBeforeUnmount(onUp);
       <template v-if="fm.error">
         <div>这个目录没能列出来</div>
         <div style="margin-top: 4px">{{ fm.error }}</div>
-        <button class="fm-btn sm" @click="fm.refresh()">重试</button>
+        <ElButton size="small" @click="fm.refresh()">重试</ElButton>
       </template>
       <template v-else>
         <span class="fm-ficon" style="width: 56px; height: 56px; color: #f0b13b" v-html="iconSvg('folderOpenFill')" />
@@ -238,3 +241,364 @@ onBeforeUnmount(onUp);
     />
   </div>
 </template>
+
+<style scoped>
+/* ---------- 文件区 ---------- */
+.fm-view {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--el-bg-color);
+  outline: none;
+  user-select: none;
+}
+.fm-view.dropping {
+  outline: 2px dashed var(--el-color-primary);
+  outline-offset: -8px;
+}
+.fm-loading {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: var(--el-bg-color);
+  box-shadow: var(--el-box-shadow-light);
+  color: var(--el-text-color-regular);
+  font-size: 12.5px;
+}
+.fm-empty {
+  padding: 70px 0;
+  text-align: center;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+.fm-empty .fm-ficon {
+  width: 56px;
+  height: 56px;
+  display: block;
+  margin: 0 auto 12px;
+}
+.fm-empty .el-button {
+  margin-top: 12px;
+}
+
+/* 勾选框 */
+.fm-cbx {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--el-border-color);
+  border-radius: 3px;
+  background: var(--el-bg-color);
+  color: #fff;
+  cursor: pointer;
+}
+.fm-cbx svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+}
+.fm-cbx.on {
+  background: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+.fm-cbx.on svg {
+  opacity: 1;
+}
+.fm-cbx.part::after {
+  content: "";
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--el-color-primary);
+}
+
+/* 详细信息：表格 */
+.fm-list {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.fm-list th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 34px;
+  padding: 0 8px;
+  background: var(--el-bg-color);
+  color: var(--el-text-color-regular);
+  font-size: 12.5px;
+  font-weight: 400;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.fm-list th.sortable {
+  cursor: pointer;
+}
+.fm-list th.sortable:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-list th .fm-arr {
+  margin-left: 2px;
+  color: var(--el-color-primary);
+  font-size: 9px;
+}
+.fm-list td {
+  height: 37px;
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 13.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+}
+.fm-list td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fm-list tbody tr:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-list tbody tr.sel td {
+  background: var(--el-color-primary-light-9);
+  border-top-color: var(--el-color-primary-light-5);
+  border-bottom-color: var(--el-color-primary-light-5);
+}
+.fm-list tbody tr.sel td:first-child {
+  border-left: 1px solid var(--el-color-primary-light-5);
+  border-radius: 4px 0 0 4px;
+}
+.fm-list tbody tr.sel td:last-child {
+  border-right: 1px solid var(--el-color-primary-light-5);
+  border-radius: 0 4px 4px 0;
+}
+.fm-list tbody tr.sel + tr.sel td {
+  border-top-color: transparent;
+}
+.fm-list tbody tr.sel + tr.sel td:first-child {
+  border-top-left-radius: 0;
+}
+.fm-list tbody tr.sel + tr.sel td:last-child {
+  border-top-right-radius: 0;
+}
+.fm-list tbody tr.sel:has(+ tr.sel) td:first-child {
+  border-bottom-left-radius: 0;
+}
+.fm-list tbody tr.sel:has(+ tr.sel) td:last-child {
+  border-bottom-right-radius: 0;
+}
+.fm-list .c1 {
+  width: 38px;
+  padding-right: 0;
+}
+.fm-list .c3 {
+  width: 156px;
+}
+.fm-list .c4 {
+  width: 120px;
+}
+.fm-list .c5 {
+  width: 104px;
+}
+.fm-nmcell {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.fm-lbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 剪切掉的条目变淡 */
+.fm-cut .fm-ficon {
+  opacity: 0.45;
+}
+.fm-cut .fm-lbl {
+  color: var(--el-text-color-secondary);
+}
+
+/* 大图标 / 中图标 / 小图标 */
+.fm-grid {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  align-content: start;
+}
+.fm-grid.lg {
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+}
+.fm-grid.md {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+}
+.fm-grid.sm {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+.fm-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  text-align: center;
+}
+.fm-grid.sm .fm-tile {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 7px 8px;
+  text-align: left;
+}
+.fm-tile:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-tile.sel {
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary-light-5);
+}
+.fm-tile > .fm-ficon {
+  width: 64px;
+  height: 64px;
+}
+.fm-grid.lg .fm-tile > .fm-ficon {
+  width: 96px;
+  height: 96px;
+}
+.fm-grid.sm .fm-tile > .fm-ficon {
+  width: 28px;
+  height: 28px;
+}
+.fm-tile .fm-lbl {
+  font-size: 12.5px;
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fm-grid.lg .fm-tile .fm-lbl {
+  -webkit-line-clamp: 3;
+}
+.fm-grid.sm .fm-tile .fm-lbl {
+  -webkit-line-clamp: 1;
+}
+.fm-tile > .fm-cbx {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  opacity: 0;
+}
+.fm-tile:hover > .fm-cbx,
+.fm-tile.sel > .fm-cbx {
+  opacity: 1;
+}
+.fm-grid.sm .fm-tile > .fm-cbx {
+  position: static;
+  opacity: 1;
+}
+
+/* 列表：一行一个，通栏竖排（和详细信息同构，只是不列表头）；
+ * 小图标才是多栏网格，两者不能长一个样（2026-11-26 创始人指出） */
+.fm-flow {
+  padding: 8px 12px;
+}
+.fm-lrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 4px;
+}
+.fm-lrow:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-lrow.sel {
+  background: var(--el-color-primary-light-9);
+  box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5);
+}
+.fm-lrow .fm-lbl {
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+/* 平铺：图标在左，名称和类型大小在右 */
+.fm-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(252px, 1fr));
+  gap: 4px;
+  padding: 12px;
+}
+.fm-ptile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 10px 12px 10px 34px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+.fm-ptile:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-ptile.sel {
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary-light-5);
+}
+.fm-ptile > .fm-cbx {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  opacity: 0;
+}
+.fm-ptile:hover > .fm-cbx,
+.fm-ptile.sel > .fm-cbx {
+  opacity: 1;
+}
+.fm-ptile > .fm-ficon {
+  width: 48px;
+  height: 48px;
+}
+.fm-ptile .fm-txt {
+  min-width: 0;
+}
+.fm-ptile .fm-lbl {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.fm-ptile .fm-sub {
+  margin-top: 3px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+/* 框选 */
+.fm-marquee {
+  position: absolute;
+  z-index: 2;
+  display: none;
+  border: 1px solid var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  opacity: 0.6;
+  pointer-events: none;
+}
+</style>

@@ -18,6 +18,9 @@ ahy 框架的前端模板仓：Vue 3 组件与页面，发 `.vue` 源码不预�
 - **图标全用微软 Fluent**（`@fluentui/svg-icons`，MIT）。`src/file-manager/icons/fluent.js` 是 `scripts/gen-icons.mjs` 的生成物，不许手改：换图标改脚本里的表，跑 `npm run icons`；`test/icons.test.js` 逐条对照 npm 包守门。
 - **取色只用 Element Plus 的 CSS 变量**（`--el-*`），明暗跟着使用方走，不自造配色表；文件类型图标的颜色除外（那是图标本身的颜色）。样式写原生 CSS，不用 sass。
 - 样式类名一律带 `fm-` 前缀。挂在组件树里的以 `.fm` 为根，传送到 body 下的（右键菜单、对话框、提示）用 `.fm-` 开头的类名。
+- **样式分工（2026-11-27 起）**：组件私有的写在该组件自己的 `<style scoped>` 块里；`styles.css` 只放跨组件共用的基类（.fm-bar / .fm-push / .fm-ico / .fm-ficon / .fm-spin / .fm-tw / .fm-iconbtn）与传送出组件树的部分（.fm-dialog 弹窗壳、.fm-toast）。共用基类别拆进单组件 scoped——其他组件（含 append-to-body 的 slot 内容）够不着那个 scoped 属性。
+- **不覆盖 Element Plus 内部类名**（工程规范 7.3）：弹窗壳的样子全走官方 CSS 变量（--el-dialog-*），头部、内容、底部的间距用 slot 里自己的类（.fm-dlg-head / .fm-dlg-body / .fm-dlg-foot）画；给自有布局穿透 Element 内部节点用 `:deep()` 并写明理由。仅剩的例外是 `.fm-toast .el-message__icon` 的隐藏——ElMessage 没有「不显示图标」的官方开关。
+- **控件选型**：标准动作（弹窗按钮、输入框、图片缩略图、大图预览）一律 Element Plus；仿资源管理器观感的（工具栏导航、命令栏、文件区行内条目）保留原生元素，理由见 README「为什么有些控件是原生元素」。
 - 本地给别的工程试用本包，用 `npm pack` 打出来的压缩包，别写目录路径：目录链接会把本仓的开发依赖（另一份 Vue）带进对方。
   换了代码要重新打包，并先删掉对方 `node_modules` 里的旧包再装，npm 不一定察觉压缩包变了。
 - 注释写中文，只写代码表达不了的信息；导出的函数和组件要有说明。全仓禁 emoji。

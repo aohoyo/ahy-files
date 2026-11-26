@@ -27,3 +27,39 @@ const fm = useFm();
     </div>
   </div>
 </template>
+
+<style scoped>
+.fm-tree {
+  width: 212px;
+  flex-shrink: 0;
+  padding: 8px 6px;
+  overflow: auto;
+  background: var(--el-bg-color);
+  border-right: 1px solid var(--el-border-color-lighter);
+}
+.fm-tree-title {
+  padding: 6px 8px 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.fm-node {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding-right: 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fm-node:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-node.cur {
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+.fm-nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

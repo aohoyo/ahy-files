@@ -79,3 +79,47 @@ function takeFocus() {
     <input :ref="(el) => (fm.folderInput = el)" type="file" webkitdirectory multiple hidden @change="fm.onPicked" />
   </div>
 </template>
+
+<style scoped>
+/* ---------- 主体：左侧目录树 + 文件区 ---------- */
+.fm-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* 拖进来上传的提示 */
+.fm-dropzone {
+  position: absolute;
+  inset: 108px 14px 44px;
+  z-index: 4;
+  display: none;
+  place-items: center;
+  border: 2px dashed var(--el-color-primary);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 94%, transparent);
+  color: var(--el-color-primary);
+  font-size: 15px;
+  pointer-events: none;
+}
+.fm.dropping .fm-dropzone {
+  display: grid;
+}
+
+/* 长操作遮罩 */
+.fm-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--el-bg-color) 72%, transparent);
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+}
+.fm-busy > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+</style>

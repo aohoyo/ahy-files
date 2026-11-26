@@ -1,6 +1,6 @@
 {
   "name": "@aohoyo/ahy-files",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "ahy 框架的前端模板：Vue 3 组件与页面，第一个是仿 Windows 资源管理器的文件管理",
   "files": [
     "src"

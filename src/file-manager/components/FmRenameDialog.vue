@@ -2,10 +2,11 @@
 // 改名/新建文件夹的输入弹窗。图标视图里就地改名的输入框会超出格子、名字长一点就显示不全，
 // 所以统一改成弹窗输入（2026-11-26 创始人定）；回车提交、Esc 取消，名字不合规就留在弹窗里提示。
 import { computed, nextTick, ref, watch } from "vue";
-import { ElDialog, ElInput } from "element-plus/es";
+import { ElButton, ElDialog, ElInput } from "element-plus/es";
 // 组件和它的样式一起引：按需自动引入样式的项目只处理它自己的页面，不会管依赖包里的组件
 import "element-plus/es/components/dialog/style/css";
 import "element-plus/es/components/input/style/css";
+import "element-plus/es/components/button/style/css";
 import { splitName } from "../logic/path";
 import { useFm } from "../composables/context";
 
@@ -58,7 +59,6 @@ function submit() {
 <template>
   <ElDialog
     :model-value="open"
-    :title="title"
     width="430px"
     class="fm-dialog"
     append-to-body
@@ -67,19 +67,26 @@ function submit() {
     destroy-on-close
     @update:model-value="(v) => !v && fm.cancelRename()"
   >
-    <ElInput
-      ref="input"
-      v-model="name"
-      spellcheck="false"
-      :placeholder="isNew ? '文件夹名字' : '新名字'"
-      @keydown.enter.prevent.stop="submit"
-      @keydown.esc.prevent.stop="fm.cancelRename()"
-    />
+    <template #header>
+      <div class="fm-dlg-head"><span class="fm-dlg-title">{{ title }}</span></div>
+    </template>
+    <div class="fm-dlg-body">
+      <ElInput
+        ref="input"
+        v-model="name"
+        spellcheck="false"
+        :placeholder="isNew ? '文件夹名字' : '新名字'"
+        @keydown.enter.prevent.stop="submit"
+        @keydown.esc.prevent.stop="fm.cancelRename()"
+      />
+    </div>
     <template #footer>
-      <button class="fm-btn" @click="fm.cancelRename()">取消</button>
-      <button class="fm-btn pri" :disabled="!!fm.renaming?.saving" @click="submit">
-        {{ isNew ? "创建" : "确定" }}
-      </button>
+      <div class="fm-dlg-foot">
+        <ElButton @click="fm.cancelRename()">取消</ElButton>
+        <ElButton type="primary" :disabled="!!fm.renaming?.saving" @click="submit">
+          {{ isNew ? "创建" : "确定" }}
+        </ElButton>
+      </div>
     </template>
   </ElDialog>
 </template>

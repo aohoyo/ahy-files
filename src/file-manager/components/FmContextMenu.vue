@@ -122,3 +122,57 @@ onBeforeUnmount(() => {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* 右键菜单 */
+.fm-menu {
+  position: fixed;
+  min-width: 198px;
+  padding: 5px;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 7px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+}
+.fm-menu-item {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+.fm-menu-item:hover:not(:disabled) {
+  background: var(--el-fill-color-light);
+}
+.fm-menu-item:disabled {
+  color: var(--el-text-color-disabled);
+}
+.fm-menu-item em {
+  margin-left: auto;
+  padding-left: 26px;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.fm-menu-item .fm-tail {
+  display: inline-flex;
+  margin-left: auto;
+  padding-left: 20px;
+}
+.fm-menu-sep {
+  height: 1px;
+  margin: 5px 2px;
+  background: var(--el-border-color-lighter);
+}
+</style>

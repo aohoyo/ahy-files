@@ -59,3 +59,19 @@ const box = computed(() => ({ width: props.size + "px", height: props.size + "px
     <span v-else class="fm-ficon-svg" v-html="icon" />
   </span>
 </template>
+
+<style scoped>
+/* el-image 内部结构与内部 img 要撑满并保留圆角：Element 渲染的节点不带本组件的
+   scoped 属性，用 :deep 穿透——这属于「给自有组件的实例定布局」，不是改它的皮肤。
+   图标盒的基础样式（.fm-ficon / .fm-ficon svg）在全局 styles.css：左侧树与选目标
+   弹窗里还有裸用这个类的地方 */
+.fm-ficon > :deep(.el-image),
+.fm-ficon :deep(.el-image img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: cover;
+  background: var(--el-fill-color-light);
+}
+</style>

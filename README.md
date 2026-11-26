@@ -30,7 +30,7 @@ ahy 框架的前端模板仓：Vue 3 组件与页面模板，发 `.vue` 源码�
 | 依赖 | 版本 | 谁装 |
 |------|------|------|
 | vue | ^3.5 | 使用方装 |
-| element-plus | >=2.13 | 使用方装。包里只用到了 `ElDialog`、`ElMessage` 两个组件，连同它们的样式一起显式引入；取色全用 Element Plus 的 CSS 变量，明暗主题跟着使用方走 |
+| element-plus | >=2.13 | 使用方装。包里用到了 ElButton / ElDialog / ElImage / ElImageViewer / ElInput / ElMessage 六个组件，连同它们的样式一起显式引入；取色全用 Element Plus 的 CSS 变量，明暗主题跟着使用方走 |
 
 ## 怎么引进
 
@@ -113,6 +113,10 @@ const can = (action) => ({ upload: hasPerm("files:update"), delete: hasPerm("fil
 | POST | /delete | 批量删除 |
 
 写规矩（哪些目录能写、保护名单、接口对应哪个权限码）在 `ahy-storage` 的配置 `module.storage.manage` 里。
+
+## 为什么有些控件是原生元素
+
+界面仿 Windows 资源管理器，工具栏导航钮、命令栏按钮、文件区的勾选框与行内条目这类控件要做成无边框、悬停浮底色的 Explorer 风格，Element 的组件做不出这个观感，所以保留原生元素。弹窗里的取消、确定、删除这类标准动作按钮与输入框、图片缩略图、大图预览都走 Element Plus（工程规范「Element 是底座」：留下的每个原生元素都答得出为什么在这）。样式分工：组件私有的在各组件 scoped 块里，跨组件共用与传送出组件树的（右键菜单、弹窗壳、toast）在 `styles.css`。
 
 ## 已知限制
 

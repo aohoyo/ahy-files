@@ -51,3 +51,99 @@ function toggle() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 上传进度浮层（在 .fm 里面，贴右下角） */
+.fm-xf {
+  position: absolute;
+  right: 12px;
+  bottom: 40px;
+  z-index: 20;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.16);
+}
+.fm-xf.small {
+  width: 250px;
+}
+.fm-xf.small .fm-xf-body {
+  display: none;
+}
+.fm-xf-h {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.fm-xf-h .fm-pct {
+  color: var(--el-text-color-regular);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.fm-xf-h .fm-push {
+  display: flex;
+}
+.fm-xf-body {
+  max-height: 248px;
+  overflow: auto;
+  padding: 2px 8px 8px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+.fm-xf-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 48px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.fm-xf-row:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-xf-row > .fm-ico {
+  color: var(--el-color-success);
+}
+.fm-xf-row .fm-meta {
+  flex: 1;
+  min-width: 0;
+}
+.fm-xf-row .fm-meta > div:first-child {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-xf-row .fm-meta > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fm-xf-row .fm-err {
+  overflow: hidden;
+  color: var(--el-color-danger);
+  text-overflow: ellipsis;
+}
+.fm-progress {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--el-fill-color);
+}
+.fm-progress i {
+  display: block;
+  height: 100%;
+  background: var(--el-color-primary);
+}
+</style>

@@ -1,9 +1,10 @@
 <script setup>
 // 「移动到」「复制到」：在一棵目录树里选目标文件夹。只能选可写目录；移动时不能选进自己里面。
 import { computed, ref, watch } from "vue";
-import { ElDialog } from "element-plus/es";
+import { ElButton, ElDialog } from "element-plus/es";
 // 组件和它的样式一起引：按需自动引入样式的项目只处理它自己的页面，不会管依赖包里的组件
 import "element-plus/es/components/dialog/style/css";
+import "element-plus/es/components/button/style/css";
 import FmIcon from "./FmIcon.vue";
 import { iconSvg } from "../icons";
 import { isUnder, parentDir } from "../logic/path";
@@ -84,12 +85,15 @@ function confirm() {
     @update:model-value="(v) => !v && close()"
   >
     <template #header>
-      <span>{{ isMove ? "移动到" : "复制到" }}</span>
-      <span class="fm-dialog-hint">为这 {{ entries.length }} 项选一个目标文件夹</span>
-      <span class="fm-push" />
-      <button class="fm-iconbtn" title="关闭" @click="close"><FmIcon name="close" /></button>
+      <div class="fm-dlg-head">
+        <span class="fm-dlg-title">{{ isMove ? "移动到" : "复制到" }}</span>
+        <span class="fm-dialog-hint">为这 {{ entries.length }} 项选一个目标文件夹</span>
+        <span class="fm-push" />
+        <button class="fm-iconbtn" title="关闭" @click="close"><FmIcon name="close" /></button>
+      </div>
     </template>
 
+    <div class="fm-dlg-body">
     <div class="fm-picker">
       <div
         v-for="row in fm.treeRows"
@@ -108,13 +112,55 @@ function confirm() {
       </div>
     </div>
     <div class="fm-picker-hint">{{ hint }}</div>
-
+    </div>
     <template #footer>
-      <button class="fm-btn sm" style="margin-right: auto" :disabled="busy || !fm.canWriteDir(target)" @click="newFolder">
-        新建文件夹
-      </button>
-      <button class="fm-btn" @click="close">取消</button>
-      <button class="fm-btn pri" :disabled="busy || !!hint" @click="confirm">{{ isMove ? "移动" : "复制" }}</button>
+      <div class="fm-dlg-foot">
+        <ElButton style="margin-right: auto" size="small" :disabled="busy || !fm.canWriteDir(target)" @click="newFolder">新建文件夹</ElButton>
+        <ElButton @click="close">取消</ElButton>
+        <ElButton type="primary" :disabled="busy || !!hint" @click="confirm">{{ isMove ? "移动" : "复制" }}</ElButton>
+      </div>
     </template>
   </ElDialog>
 </template>
+
+<style scoped>
+/* 移动到 / 复制到：选目标文件夹 */
+.fm-picker {
+  height: 320px;
+  overflow: auto;
+  margin-top: 10px;
+  padding: 6px 4px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+.fm-prow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding-right: 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fm-prow:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-prow.cur {
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+.fm-prow.dis {
+  color: var(--el-text-color-disabled);
+  cursor: default;
+}
+.fm-prow.dis:hover {
+  background: none;
+}
+.fm-picker-hint {
+  min-height: 18px;
+  margin-top: 8px;
+  color: var(--el-color-danger);
+  font-size: 12.5px;
+}
+</style>

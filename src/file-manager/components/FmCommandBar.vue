@@ -65,3 +65,84 @@ const moreMenu = () => [
     </button>
   </div>
 </template>
+
+<style scoped>
+/* ---------- 命令栏 ---------- */
+.fm-command {
+  min-height: 60px;
+  gap: 0;
+  padding: 4px 10px;
+}
+.fm-cmd {
+  position: relative;
+  height: 50px;
+  min-width: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+}
+.fm-cmd .fm-ico svg {
+  width: 20px;
+  height: 20px;
+}
+.fm-cmd:hover:not(:disabled) {
+  background: var(--el-fill-color-light);
+}
+.fm-cmd:disabled {
+  color: var(--el-text-color-disabled);
+  cursor: default;
+}
+.fm-cmd .fm-dd {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+.fm-cmd .fm-dd svg {
+  width: 10px;
+  height: 10px;
+}
+.fm-vsep {
+  width: 1px;
+  height: 32px;
+  flex-shrink: 0;
+  margin: 0 10px;
+  background: var(--el-border-color-lighter);
+}
+.fm-cmdline {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 2px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.fm-cmdline:hover {
+  background: var(--el-fill-color-light);
+}
+.fm-cmdline .fm-ico svg {
+  width: 18px;
+  height: 18px;
+}
+.fm-cmdline .fm-caret {
+  color: var(--el-text-color-secondary);
+}
+</style>
