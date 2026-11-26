@@ -15,6 +15,15 @@ const input = ref(null);
 const open = computed(() => !!fm.renaming);
 const isNew = computed(() => !!fm.renaming?.isNew);
 const title = computed(() => (isNew.value ? "新建文件夹" : "重命名"));
+// 输入框的值走一层带空值保护的代理：点取消时 renaming 立刻置空，而 ElDialog 的离场动画
+// 期间模板还在渲染，直接读 fm.renaming.value 会对 null 取属性、抛错把关闭流程卡死
+// （2026-11-26 创始人实测：点取消没反应）
+const name = computed({
+  get: () => fm.renaming?.value ?? "",
+  set: (v) => {
+    if (fm.renaming) fm.renaming.value = v;
+  },
+});
 
 // 打开后把名字选上：文件夹全选，文件只选主名（后缀一般不用改）
 watch(open, async (v) => {
@@ -23,8 +32,10 @@ watch(open, async (v) => {
   const el = input.value?.input || input.value?.$el?.querySelector("input");
   if (!el) return;
   el.focus();
-  const name = fm.renaming.value ?? "";
-  const len = fm.renaming.dir ? name.length : splitName(name)[0].length;
+  const cur = fm.renaming;
+  if (!cur) return;
+  const text = String(cur.value ?? "");
+  const len = cur.dir ? text.length : splitName(text)[0].length;
   el.setSelectionRange(0, len);
 });
 // 名字不合规被退回时，重新全选让使用者接着改
@@ -53,11 +64,12 @@ function submit() {
     append-to-body
     :show-close="false"
     :close-on-click-modal="false"
+    destroy-on-close
     @update:model-value="(v) => !v && fm.cancelRename()"
   >
     <ElInput
       ref="input"
-      v-model="fm.renaming.value"
+      v-model="name"
       spellcheck="false"
       :placeholder="isNew ? '文件夹名字' : '新名字'"
       @keydown.enter.prevent.stop="submit"

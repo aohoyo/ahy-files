@@ -628,8 +628,12 @@ export function useFileManager(props) {
     // 还能按 F2/Delete，但注意力若在后台别处（左侧导航、页头、别的弹层），按 Delete / Ctrl+V
     // 不该动文件管理器里残留的选择——那会误删或误粘。
     const inFm = t instanceof Element && !!t.closest(".fm");
-    const inDialog = t instanceof Element && !!t.closest(".fm-dialog, .fm-viewer, .fm-menu");
-    if (!inFm && !inDialog) {
+    // .el-image-viewer__wrapper 是 ElImageViewer 传送到 body 下的根节点
+    const inDialog = t instanceof Element && !!t.closest(".fm-dialog, .fm-viewer, .fm-menu, .el-image-viewer__wrapper");
+    // 弹层里只管 Esc（菜单关掉、弹窗自己关），Delete / F2 / Ctrl+V 这些一律不接：
+    // 预览大图时按 Delete 不该把背后选中的文件删掉
+    if (inDialog) return;
+    if (!inFm) {
       const active = document.activeElement;
       const activeInFm = active instanceof Element && !!active.closest(".fm");
       if (!activeInFm) return;
