@@ -25,7 +25,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", fm.onKeydown));
 const props = defineProps({
   // 适配器，必填。方法清单见 api.js
   api: { type: Object, required: true },
-  // 哪些目录能写（含子目录），其余目录只读浏览。不传就听后端随列目录下发的（真源在服务端配置）
+  // 保留只为兼容旧用法；2026-11-26 起可写与否只看权限回调，不再据此判断
   writableRoots: { type: Array, default: null },
   // 权限回调 can(action)，action 是 upload / create / rename / move / copy / delete / download 之一；不传就都行
   can: { type: Function, default: null },

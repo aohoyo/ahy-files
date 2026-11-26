@@ -129,13 +129,12 @@ export function createStorageApi(options = {}) {
         marker: d.marker || "",
         downloadBase: d.download_base || downloadBase,
         limits: d.limits || undefined,
-        // 可写根与保护名单由后端下发（真源是服务端配置），前端不再自己写一份
-        writableRoots: Array.isArray(d.writable_roots) ? d.writable_roots : undefined,
-        protected: Array.isArray(d.protected) ? d.protected : undefined,
       };
     },
     async uploadTicket({ name, key }) {
-      // 对象名第一段就是上传域（files/… 对应 scope=files），凭证接口按它校验
+      // 对象名第一段就是上传域。对注册过的 scope（files/release/backup 等）走白名单校验；
+      // 对没注册的目录（可写根放开后，customer-avatar/、tts/ 等）后端按文件管理的写规矩放行
+      //（可写根内、保护名单除外），所以 scope 用第一段即可。
       const t = await request({
         method: "POST",
         url: ticketUrl,
