@@ -1,4 +1,4 @@
-# AGENTS.md — ahy-web 仓库规范
+# AGENTS.md — ahy-files 仓库规范
 
 > 规范唯一入口 = 工作区根 `AGENTS.md`；本文件只放本仓库覆盖项。冲突时以本仓库为准。
 
@@ -26,7 +26,7 @@ ahy 框架的前端模板仓：Vue 3 组件与页面，发 `.vue` 源码不预�
 ## 目录
 
 ```
-ahy-web/
+ahy-files/
 ├── src/index.js               出口
 ├── src/file-manager/
 │   ├── FileManager.vue        整页

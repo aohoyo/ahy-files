@@ -1,7 +1,7 @@
 // 演示页用的假适配器：一个内存里的文件系统，把适配器约定的每个方法都实现一遍，
 // 行为照着真后端来（只读目录拒写、同名加序号、不能把文件夹移进自己里面），
 // 可以当「适配器怎么写」的活例子看。数据取自设计稿。
-import { baseName, copyName, extOf, parentDir, uniqueName } from "@aohoyo/ahy-web";
+import { baseName, copyName, extOf, parentDir, uniqueName } from "@aohoyo/ahy-files";
 
 const MB = 1048576;
 const KB = 1024;

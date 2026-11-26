@@ -11,7 +11,7 @@ export default defineConfig({
   root: resolve(root, "dev"),
   plugins: [vue()],
   resolve: {
-    alias: { "@aohoyo/ahy-web": resolve(root, "src") },
+    alias: { "@aohoyo/ahy-files": resolve(root, "src") },
   },
   server: { host: "127.0.0.1", port: 5183, strictPort: true },
 });

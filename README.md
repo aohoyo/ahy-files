@@ -1,4 +1,4 @@
-# ahy-web
+# ahy-files
 
 ahy 框架的前端模板仓：Vue 3 组件与页面模板，发 `.vue` 源码不预编译，由使用方的打包器编译。第一个模板是文件管理，界面仿 Windows 资源管理器。
 
@@ -38,7 +38,7 @@ ahy 框架的前端模板仓：Vue 3 组件与页面模板，发 `.vue` 源码�
 tag 可以移动，写 tag 会让同一份 lock 在不同时间装出不同代码；写 commit 才能复现。仓是公开的，匿名 https 就能拉：
 
 ```json
-"@aohoyo/ahy-web": "git+https://github.com/aohoyo/ahy-web.git#<commit-sha>"
+"@aohoyo/ahy-files": "git+https://github.com/aohoyo/ahy-files.git#<commit-sha>"
 ```
 
 使用方不用为本包改任何构建配置。两种构建：
@@ -57,7 +57,7 @@ tag 可以移动，写 tag 会让同一份 lock 在不同时间装出不同代�
 
 ```vue
 <script setup>
-import { FileManager, createStorageApi } from "@aohoyo/ahy-web";
+import { FileManager, createStorageApi } from "@aohoyo/ahy-files";
 import request from "@/utils/request";
 
 // silent：文件管理器自己弹提示，请求层别再弹一遍
