@@ -93,7 +93,7 @@ const moreMenu = () => [
   cursor: pointer;
   user-select: none;
 }
-.fm-cmd .fm-ico svg {
+.fm-cmd .fm-ico :deep(svg) {
   width: 20px;
   height: 20px;
 }
@@ -109,7 +109,7 @@ const moreMenu = () => [
   top: 5px;
   right: 5px;
 }
-.fm-cmd .fm-dd svg {
+.fm-cmd .fm-dd :deep(svg) {
   width: 10px;
   height: 10px;
 }
@@ -138,7 +138,7 @@ const moreMenu = () => [
 .fm-cmdline:hover {
   background: var(--el-fill-color-light);
 }
-.fm-cmdline .fm-ico svg {
+.fm-cmdline .fm-ico :deep(svg) {
   width: 18px;
   height: 18px;
 }

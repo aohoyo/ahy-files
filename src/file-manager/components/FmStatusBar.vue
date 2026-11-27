@@ -1,6 +1,6 @@
 <script setup>
 // 状态栏：几个项目、选了几项多大。排序与查看只在命令栏有一处——
-// 状态栏再放一份纯粹重复（2026-11-26 创始人指出）。
+// 状态栏再放一份纯粹重复。
 import { fmtSize } from "../logic/format";
 import { useFm } from "../composables/context";
 

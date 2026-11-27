@@ -55,4 +55,24 @@ describe("三条隔离规矩", () => {
       expect(code, `${file} 里不该往 window 挂状态`).not.toMatch(/window\.__?\w+\s*=/);
     }
   });
+
+  it("scoped 样式里命中 v-html 注入节点的选择器必须 :deep 包裹", () => {
+    // svg 都经 FmIcon / v-html 注入，节点上没有本组件的 scope 属性；
+    // 不包 :deep 的规则静默失效，还不会被任何构建检查发现（2026-11-27 审查 P1 实测踩过）
+    for (const { file, code } of sources) {
+      const m = code.match(/<style[^>]*scoped[^>]*>([\s\S]*?)<\/style>/);
+      if (!m) continue;
+      const css = m[1].replace(/\/\*[\s\S]*?\*\//g, "");
+      for (const rule of css.match(/[^{}]+\{[^{}]*\}/g) || []) {
+        const sel = rule.slice(0, rule.indexOf("{")).trim();
+        for (const one of sel.split(",")) {
+          const t = one.trim();
+          if (!t || t.startsWith("@") || t === "from" || t === "to") continue;
+          if (/\bsvg\b/.test(t) && !t.includes(":deep(")) {
+            throw new Error(`${file} 的 scoped 选择器「${t}」命中 v-html 注入的 svg，不带本组件 scope 属性，要用 :deep 包裹`);
+          }
+        }
+      }
+    }
+  });
 });

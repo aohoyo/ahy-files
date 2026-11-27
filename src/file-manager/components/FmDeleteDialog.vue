@@ -59,7 +59,7 @@ const close = () => (fm.confirmDelete = null);
   margin-top: 2px;
   color: var(--el-color-danger);
 }
-.fm-warnrow > .fm-ico svg {
+.fm-warnrow > .fm-ico :deep(svg) {
   width: 20px;
   height: 20px;
 }

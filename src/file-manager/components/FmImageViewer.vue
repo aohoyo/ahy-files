@@ -1,6 +1,6 @@
 <script setup>
 // 图片预览：用 element-plus 的 ElImageViewer（自带缩放、旋转、左右切换、滚轮放大、点遮罩关闭），
-// 不再自研一套只有上一张/下一张的弹窗（2026-11-26 创始人问「大图点开用的是什么」后换掉）。
+// 大图预览用 element-plus 的全屏查看器，不自研一套只有翻页的弹窗。
 // 地址优先取 1280 的中图（快），取不到退回原图；整目录都没有可用地址就不进 viewer。
 import { computed, ref, watch } from "vue";
 import { ElImageViewer } from "element-plus/es";

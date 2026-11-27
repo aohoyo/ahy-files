@@ -23,7 +23,7 @@ export const VIEWS = [
 const VIEW_ICON = { details: "viewDetail", list: "viewList" };
 // 一次移动、复制、删除最多交给后端多少项；再多分批，顺带能报出批次进度
 const CHUNK = 200;
-// 新建文件夹还没提交时在列表里占位用的临时键
+// 新建文件夹弹窗还没提交时用的占位键（不进列表）
 const NEW_KEY = "\u0000new";
 const PREF_KEY = "ahy-file-manager:prefs";
 // 要落在可写目录里才算数的动作；其余的（下载、复制到别处）不受只读限制
@@ -46,16 +46,16 @@ export function useFileManager(props) {
   const prefs = loadPrefs();
 
   // ---- 能做什么 ----
-  // 可写与否只看权限回调（2026-11-26 创始人定：不设目录白名单，整个桶都能写，
-  // 文件管理入口本身有 admin 权限码门控）。writableRoots 入参保留只为兼容旧用法，但不再据此判断。
+  // 可写与否只看权限回调（不设目录白名单：整个桶都能写，文件管理入口本身有 admin 权限码门控）。
+  // writableRoots 入参保留只为兼容旧用法，但不再据此判断。
   const writable = computed(() => true);
   // 权限判断：不传 can 就全开（各后台自己决定要不要管）；传了就按它的答复来。
-  // 动作名收成白名单，未知动作一律 false——组件以后新增动作，不会被老的使用方静默放行（交叉审 P2）。
+  // 动作名收成白名单，未知动作一律 false——组件以后新增动作，不会被老的使用方静默放行。
   const ACTIONS = new Set(["upload", "create", "rename", "move", "copy", "delete", "download"]);
   const can = (action) =>
     ACTIONS.has(action) && (typeof props.can !== "function" || !!props.can(action));
   const may = (action) => can(action) && (!WRITE_ACTIONS.has(action) || writable.value);
-  // 命令置灰的原因：先说权限，再说只读
+  // 命令置灰的原因：没有权限
   const why = (action) => (!can(action) ? "没有权限" : !writable.value ? "这个目录只读" : "");
 
   // ---- 列表 ----
@@ -81,7 +81,7 @@ export function useFileManager(props) {
     }
   });
 
-  // 就地改名的状态：正在改哪一项、输入框里的字。isNew 是新建文件夹还没提交
+  // 改名弹窗的状态：正在改哪一项、输入框里的字。isNew 是新建文件夹还没提交
   const renaming = ref(null);
   const renameRetry = ref(0);
   // 文件区给回来的「把焦点交还给我」：改名提交后调用，免得焦点落在 body 上
@@ -106,8 +106,16 @@ export function useFileManager(props) {
   // 列当前目录。more 是接着上一页往下取；fresh 跳过后端缓存回源。
   async function load({ fresh = false, more = false } = {}) {
     const mine = ++seq;
-    if (more) loadingMore.value = true;
-    else loading.value = true;
+    if (more) {
+      loadingMore.value = true;
+    } else {
+      loading.value = true;
+      // 非翻页一律先清场：切目录或刷新失败时，旧目录的条目不能挂在新路径下——
+      // 挂着还能被选中删除，删的其实是旧目录里的文件（审查发现）
+      entries.value = [];
+      marker.value = "";
+      selection.clear();
+    }
     error.value = "";
     try {
       const r = await api.list({ prefix: path.value, marker: more ? marker.value : undefined, fresh });
@@ -135,7 +143,8 @@ export function useFileManager(props) {
     }
   }
 
-  const loadMore = () => !loadingMore.value && marker.value && load({ more: true });
+  // 翻页只在没有任何加载在跑时才接：目录切换正在进行时旧 marker 已经清了，别拿新目录配旧页
+  const loadMore = () => !loading.value && !loadingMore.value && marker.value && load({ more: true });
 
   async function refresh() {
     spinning.value = true;
@@ -218,17 +227,21 @@ export function useFileManager(props) {
   }
 
   const busy = ref("");
-  // 长操作：盖上「正在处理」，同一时间只许一个；出错只提示一次
+  // 长操作：盖上「正在处理」，同一时间只许一个；出错只提示一次。
+  // 回成功与否：批量操作中途失败时后端已经动了一部分，调用方失败也要回源刷新。
   async function run(label, fn) {
-    if (busy.value) return;
+    if (busy.value) return false;
     busy.value = label;
+    let ok = false;
     try {
-      return await fn();
+      await fn();
+      ok = true;
     } catch (e) {
       toast(e?.message || "操作失败，请稍后重试", "error");
     } finally {
       busy.value = "";
     }
+    return ok;
   }
 
   // 分批交给后端，把各批的结果接起来
@@ -272,7 +285,7 @@ export function useFileManager(props) {
 
   async function copyLink(list) {
     if (!list.length) return;
-    // 产出的是下载地址，和「下载」同口径过权限（交叉审 P2：原来这条没走 can）
+    // 产出的是下载地址，和「下载」同口径过权限
     if (!can("download")) return toast("没有权限复制下载链接", "error");
     const links = [];
     for (const e of list) {
@@ -308,15 +321,18 @@ export function useFileManager(props) {
       .map((it) => (mode === "copy" && parentDir(it.key) === target ? { key: it.key, name: copyName(it.name) } : { key: it.key }));
 
   async function sendItems(mode, items, from, target) {
-    await run("正在处理…", async () => {
-      const out = await inBatches(items, mode === "cut" ? "正在移动" : "正在复制", (part) =>
+    if (!may(mode === "cut" ? "move" : "copy")) return toast("没有权限执行这个操作", "error");
+    let out = [];
+    const ok = await run("正在处理…", async () => {
+      out = await inBatches(items, mode === "cut" ? "正在移动" : "正在复制", (part) =>
         api[mode === "cut" ? "move" : "copy"]({ items: part, toDir: target }),
       );
       if (out.length) {
         toast(`已${mode === "cut" ? "移动" : "复制"} ${out.length} 项到「${baseName(target) || "全部文件"}」`, "success");
       }
-      await afterWrite([from, target], out.map((t) => t.to));
     });
+    // 失败也回源：后端是「前 N 项已完成」之后才报错，已经搬走的得从列表里消失（审查发现）
+    await afterWrite([from, target], ok ? out.map((t) => t.to) : undefined);
   }
 
   function paste() {
@@ -343,6 +359,8 @@ export function useFileManager(props) {
     const d = moveDialog.value;
     moveDialog.value = null;
     if (!d) return;
+    // 弹窗开着的时候权限可能已经变了，发请求前复查一道（审查发现）
+    if (!may(d.mode === "cut" ? "move" : "copy")) return toast("没有权限执行这个操作", "error");
     const items = planItems(d.mode, d.entries, target);
     if (items.length) sendItems(d.mode, items, path.value, target);
   }
@@ -356,11 +374,11 @@ export function useFileManager(props) {
     const list = confirmDelete.value;
     confirmDelete.value = null;
     if (!list) return;
+    if (!may("delete")) return toast("没有权限执行这个操作", "error");
     run("正在删除…", async () => {
       await inBatches(list.map((e) => e.key), "正在删除", (keys) => api.remove({ keys }));
       toast(`已删除 ${list.length} 项`, "success");
-      await afterWrite([path.value]);
-    });
+    }).then(() => afterWrite([path.value]));
   }
 
   // ---- 新建文件夹、改名 ----
@@ -385,6 +403,11 @@ export function useFileManager(props) {
   async function commitRename() {
     const r = renaming.value;
     if (!r || r.saving) return;
+    // 提交前复查权限：弹窗开着的时候权限可能已经变了（审查发现）
+    if (!may(r.isNew ? "create" : "rename")) {
+      renaming.value = null;
+      return toast("没有权限执行这个操作", "error");
+    }
     const name = String(r.value ?? "").trim();
     const reject = (msg) => {
       toast(msg, "error");
@@ -432,6 +455,20 @@ export function useFileManager(props) {
     },
   });
 
+  // 在指定目录里现建一个「新建文件夹 (n)」并回它的完整键；「移动到」弹窗用。
+  // 权限、查重与提示都收在这里，弹窗不再自己摸 api（那条入口曾绕过权限）。
+  async function createFolderAt(dir) {
+    if (!may("create")) {
+      toast(why("create") || "没有权限新建文件夹", "error");
+      return null;
+    }
+    const r = await api.list({ prefix: dir });
+    const taken = new Set(r.entries.map((e) => e.name));
+    const name = uniqueName((n) => taken.has(n), "新建文件夹");
+    await api.createFolder({ prefix: dir, name });
+    return `${dir}${name}/`;
+  }
+
   // 收下一批要传的文件（每一项是 { file, rel }，rel 是带上相对目录的路径）。先查类型和大小，
   // 再定落下的对象名：落点 = 当前目录 + 相对路径，同名的加序号。
   function addFiles(list) {
@@ -470,27 +507,38 @@ export function useFileManager(props) {
     addFiles(files.map((file) => ({ file, rel: file.webkitRelativePath || file.name })));
   }
 
-  // 拖进来：能用目录条目接口就逐层读出相对路径（整个文件夹的结构才留得住），用不了就只收文件
+  // 拖进来：能用目录条目接口就逐层读出相对路径（整个文件夹的结构才留得住），用不了就只收文件。
+  // webkitGetAsEntry 必须在拖放事件还活着的时候同步取全——事件一结束拖拽数据就进保护模式，
+  // 之后再取回 null，多选的拖拽只会进第一项（实测过）。
   async function readDrop(dt) {
     const items = [...(dt.items || [])];
     const out = [];
-    const walk = async (entry, rel) => {
+    let skipped = 0;
+    const walk = async (entry, rel, depth) => {
       if (!entry) return;
+      // 层数封顶：拖进来的结构没有环，封顶只是防手滑拖一个异常深的目录把页面卡住
+      if (depth > 8) {
+        skipped++;
+        return;
+      }
       if (entry.isFile) {
         const file = await new Promise((resolve, reject) => entry.file(resolve, reject)).catch(() => null);
         if (file) out.push({ file, rel: rel + file.name });
+        else skipped++;
       } else if (entry.isDirectory) {
         const reader = entry.createReader();
         // 这个接口一次只吐一批，要读到空数组才算完
         for (;;) {
           const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject)).catch(() => []);
           if (!batch.length) break;
-          for (const child of batch) await walk(child, `${rel}${entry.name}/`);
+          for (const child of batch) await walk(child, `${rel}${entry.name}/`, depth + 1);
         }
       }
     };
-    if (items[0]?.webkitGetAsEntry) {
-      for (const item of items) await walk(item.webkitGetAsEntry(), "");
+    const roots = items.map((it) => (it.webkitGetAsEntry ? it.webkitGetAsEntry() : null));
+    if (roots.some(Boolean)) {
+      for (const root of roots) await walk(root, "", 0);
+      if (skipped) toast(`${skipped} 个条目读不出来，已跳过`, "error");
       return out;
     }
     return [...(dt.files || [])].map((file) => ({ file, rel: file.name }));
@@ -535,12 +583,18 @@ export function useFileManager(props) {
   const sortMenu = () => SORTS.map((s) => ({ icon: "sort", label: s.label, checked: sort.value.key === s.key, onClick: () => setSort(s.key) }));
   const viewMenu = () =>
     VIEWS.map(([k, label]) => ({ icon: VIEW_ICON[k] || "viewGrid", label, checked: view.value === k, onClick: () => (view.value = k) }));
-  // 上传入口：除了选文件，还能把收起的上传记录重新调出来（关掉浮层不等于丢了记录）
+  // 上传入口：除了选文件，还能把收起的上传记录重新调出来（关掉浮层不等于丢了记录）、清空已结束的记录
   const uploadMenu = () => [
     { icon: "document", label: "上传文件", onClick: pickFiles },
     { icon: "folder", label: "上传文件夹", onClick: pickFolder },
     ...(uploads.tasks.value.length
-      ? ["-", { icon: "upload", label: `上传记录（${uploads.tasks.value.length}）`, onClick: () => (uploads.panel.open = true) }]
+      ? [
+          "-",
+          { icon: "upload", label: `上传记录（${uploads.tasks.value.length}）`, onClick: () => (uploads.panel.open = true) },
+          ...(!uploads.summary.value.working
+            ? [{ icon: "delete", label: "清空记录", onClick: () => uploads.clear() }]
+            : []),
+        ]
       : []),
   ];
   const selectAll = () => selection.set(visibleKeys.value);
@@ -622,9 +676,9 @@ export function useFileManager(props) {
       closeMenu();
       return;
     }
-    // 输入框、文本框里的按键留给它们自己（就地改名的 Enter、Esc 已在输入框里处理）
+    // 输入框、文本框里的按键留给它们自己（改名弹窗的 Enter、Esc 在弹窗里处理）
     if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-    // 焦点不在文件管理器里就不抢（交叉审 P2）：挂在 document 上是为了勾选框、关掉的对话框之后
+    // 焦点不在文件管理器里就不抢：挂在 document 上是为了勾选框、关掉的对话框之后
     // 还能按 F2/Delete，但注意力若在后台别处（左侧导航、页头、别的弹层），按 Delete / Ctrl+V
     // 不该动文件管理器里残留的选择——那会误删或误粘。
     const inFm = t instanceof Element && !!t.closest(".fm");
@@ -691,7 +745,7 @@ export function useFileManager(props) {
     up: nav.up,
     writable,
     writableRoots: [],
-    // 与 writable 同口径：不设目录白名单，任何目录都可作为移动、复制的目标（2026-11-26 创始人定）
+    // 与 writable 同口径：不设目录白名单，任何目录都可作为移动、复制的目标
     canWriteDir: () => true,
     may,
     why,
@@ -766,6 +820,7 @@ export function useFileManager(props) {
     // 上传。队列自己管自己的响应式，不再包一层
     uploads: markRaw(uploads),
     addFiles,
+    createFolderAt,
     fileInput,
     folderInput,
     pickFiles,

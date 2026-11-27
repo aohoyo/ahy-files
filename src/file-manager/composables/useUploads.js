@@ -28,13 +28,16 @@ export function useUploads({ api, onSettled }) {
       failed: of("error"),
       working: list.some((t) => t.status === "wait" || t.status === "uploading"),
       next: Math.min(of("done") + of("uploading") + 1, live.length),
-      percent: bytes ? Math.round((loaded / bytes) * 100) : 100,
+      percent: bytes ? Math.min(100, Math.round((loaded / bytes) * 100)) : 100,
     };
   });
 
   // 收下一批要传的文件：每一项是 { file, key, rel }，key 是落下的对象名，rel 是显示用的相对路径。
+  // 上一批已经结束就先清掉它的记录：表头的「x/N」和百分比只数当前这一批，
+  // 关掉浮层再传一批时不该把上一批算进去（审查发现）。
   function enqueue(items) {
     if (!items.length) return;
+    if (!summary.value.working) tasks.value = [];
     const dirs = new Set(pendingBatch || []);
     for (const it of items) {
       let dir = parentDir(it.key);
@@ -111,19 +114,29 @@ export function useUploads({ api, onSettled }) {
   }
 
   async function formUpload(task, key, signal) {
+    // 凭证还没回来就取消了，别再去拿凭证（审查发现：取消窗口期文件照传）
+    if (signal.aborted) throw Object.assign(new Error("已取消"), { aborted: true });
     const ticket = await api.uploadTicket({ name: task.file.name, key });
     await postForm(ticket.uploadUrl, { key: ticket.key, token: ticket.token, file: task.file }, task, signal);
   }
 
   function postForm(url, fields, task, signal) {
     return new Promise((resolve, reject) => {
+      // 取消落在取凭证这一段的话，abort 事件已经发过去了，下面的监听永远不会触发：
+      // 这里补一道闸，不然文件照样整份传完还记成已完成
+      if (signal.aborted) {
+        reject(Object.assign(new Error("已取消"), { aborted: true }));
+        return;
+      }
       const xhr = new XMLHttpRequest();
       const form = new FormData();
       form.append("key", fields.key);
       form.append("token", fields.token);
       form.append("file", fields.file);
       xhr.open("POST", url);
-      xhr.upload.onprogress = (e) => e.lengthComputable && (task.loaded = e.loaded);
+      // 进度事件的 loaded 是整个表单体的字节数（含凭证等开销）：封到文件大小，
+      // 小文件的百分比才不会大于 100
+      xhr.upload.onprogress = (e) => e.lengthComputable && (task.loaded = Math.min(e.loaded, task.size));
       xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(uploadError(xhr)));
       xhr.onerror = () => reject(new Error("网络中断，上传失败"));
       xhr.onabort = () => reject(Object.assign(new Error("已取消"), { aborted: true }));
@@ -147,7 +160,7 @@ export function useUploads({ api, onSettled }) {
   }
 
   // 取消：在传的中断，排着队的作废；已经传完的留在存储里。浮层不关——
-  // 记录留在原地，使用者看得到哪些传完了、哪些被取消了（2026-11-26 创始人定）。
+  // 记录留在原地，使用者看得到哪些传完了、哪些被取消了。
   function cancel() {
     for (const t of tasks.value) if (t.status === "wait") t.status = "canceled";
     for (const c of controllers) c.abort();

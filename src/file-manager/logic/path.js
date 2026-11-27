@@ -38,7 +38,7 @@ export function crumbs(dir) {
 }
 
 // key 是否在 rootDir 之内（含它自己）。rootDir 是空串时恒为真：根目录装着一切。
-// 逐段比而不是只比字符串前缀：files2/ 不在 files/ 之内。
+// rootDir 必须是带尾斜杠的规范目录键，前缀比到段边界才对：files2/ 不在 files/ 之内。
 export function isUnder(key, rootDir) {
   if (rootDir === "") return true;
   return key === rootDir || key.startsWith(rootDir);

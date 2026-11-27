@@ -8,7 +8,6 @@ import "element-plus/es/components/button/style/css";
 import FmIcon from "./FmIcon.vue";
 import { iconSvg } from "../icons";
 import { isUnder, parentDir } from "../logic/path";
-import { uniqueName } from "../logic/naming";
 import { useFm } from "../composables/context";
 
 const fm = useFm();
@@ -47,20 +46,18 @@ function onRow(row, ev) {
   if (!blocked(row.key)) target.value = row.key;
 }
 
-// 在选中的目录里现建一个文件夹并选中它
+// 在选中的目录里现建一个文件夹并选中它。权限与查重走 fm.createFolderAt——
+// 弹窗不自己摸 api，免得绕过命令栏同一套权限
 async function newFolder() {
-  if (busy.value || !fm.canWriteDir(target.value)) return;
+  if (busy.value) return;
   busy.value = true;
   try {
-    const r = await fm.api.list({ prefix: target.value });
-    const taken = new Set(r.entries.map((e) => e.name));
-    const name = uniqueName((n) => taken.has(n), "新建文件夹");
-    await fm.api.createFolder({ prefix: target.value, name });
-    fm.toast(`已新建文件夹「${name}」`, "success");
-    const dir = `${target.value}${name}/`;
+    const dir = await fm.createFolderAt(target.value);
+    if (!dir) return;
     fm.invalidateTree([dir]);
     await fm.syncTree(dir);
     target.value = dir;
+    fm.toast(`已新建文件夹「${dir.split("/").filter(Boolean).pop()}」`, "success");
   } catch (e) {
     fm.toast(e?.message || "新建文件夹失败", "error");
   } finally {

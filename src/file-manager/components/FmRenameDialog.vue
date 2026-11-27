@@ -1,6 +1,6 @@
 <script setup>
 // 改名/新建文件夹的输入弹窗。图标视图里就地改名的输入框会超出格子、名字长一点就显示不全，
-// 所以统一改成弹窗输入（2026-11-26 创始人定）；回车提交、Esc 取消，名字不合规就留在弹窗里提示。
+// 所以统一改成弹窗输入；回车提交、Esc 取消，名字不合规就留在弹窗里提示。
 import { computed, nextTick, ref, watch } from "vue";
 import { ElButton, ElDialog, ElInput } from "element-plus/es";
 // 组件和它的样式一起引：按需自动引入样式的项目只处理它自己的页面，不会管依赖包里的组件
@@ -18,7 +18,7 @@ const isNew = computed(() => !!fm.renaming?.isNew);
 const title = computed(() => (isNew.value ? "新建文件夹" : "重命名"));
 // 输入框的值走一层带空值保护的代理：点取消时 renaming 立刻置空，而 ElDialog 的离场动画
 // 期间模板还在渲染，直接读 fm.renaming.value 会对 null 取属性、抛错把关闭流程卡死
-// （2026-11-26 创始人实测：点取消没反应）
+// （实测踩过：点取消没反应）
 const name = computed({
   get: () => fm.renaming?.value ?? "",
   set: (v) => {

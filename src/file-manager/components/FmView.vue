@@ -219,17 +219,17 @@ onBeforeUnmount(onUp);
       </div>
     </div>
 
-    <!-- 空态、读取出错 -->
-    <div v-if="!fm.visible.length && !fm.loading" class="fm-empty">
-      <template v-if="fm.error">
-        <div>这个目录没能列出来</div>
-        <div style="margin-top: 4px">{{ fm.error }}</div>
-        <ElButton size="small" @click="fm.refresh()">重试</ElButton>
-      </template>
-      <template v-else>
-        <span class="fm-ficon" style="width: 56px; height: 56px; color: #f0b13b" v-html="iconSvg('folderOpenFill')" />
-        <div>{{ fm.query.trim() ? "没有匹配的文件" : "此文件夹为空" }}</div>
-      </template>
+    <!-- 读取出错：与「列表为空」分开判。列取失败时列表是被清空的，但报错不该依赖空列表才显示 -->
+    <div v-if="fm.error && !fm.loading" class="fm-empty">
+      <div>这个目录没能列出来</div>
+      <div style="margin-top: 4px">{{ fm.error }}</div>
+      <ElButton size="small" @click="fm.refresh()">重试</ElButton>
+    </div>
+
+    <!-- 空态 -->
+    <div v-else-if="!fm.visible.length && !fm.loading" class="fm-empty">
+      <span class="fm-ficon" style="width: 56px; height: 56px; color: #f0b13b" v-html="iconSvg('folderOpenFill')" />
+      <div>{{ fm.query.trim() ? "没有匹配的文件" : "此文件夹为空" }}</div>
     </div>
 
     <div v-if="fm.loading || fm.loadingMore" class="fm-loading"><span class="fm-spin" />{{ fm.loadingMore ? "正在加载…" : "正在读取…" }}</div>
@@ -303,7 +303,7 @@ onBeforeUnmount(onUp);
   color: #fff;
   cursor: pointer;
 }
-.fm-cbx svg {
+.fm-cbx :deep(svg) {
   width: 12px;
   height: 12px;
   opacity: 0;
@@ -312,7 +312,7 @@ onBeforeUnmount(onUp);
   background: var(--el-color-primary);
   border-color: var(--el-color-primary);
 }
-.fm-cbx.on svg {
+.fm-cbx.on :deep(svg) {
   opacity: 1;
 }
 .fm-cbx.part::after {
@@ -517,7 +517,7 @@ onBeforeUnmount(onUp);
 }
 
 /* 列表：一行一个，通栏竖排（和详细信息同构，只是不列表头）；
- * 小图标才是多栏网格，两者不能长一个样（2026-11-26 创始人指出） */
+ * 小图标才是多栏网格，两者不能长一个样（实测指出） */
 .fm-flow {
   padding: 8px 12px;
 }

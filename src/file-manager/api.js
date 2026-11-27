@@ -128,13 +128,14 @@ export function createStorageApi(options = {}) {
         entries: [...(d.dirs || []), ...(d.files || [])].map(mapEntry),
         marker: d.marker || "",
         downloadBase: d.download_base || downloadBase,
-        limits: d.limits || undefined,
+        // 后端给的是 max_size（蛇形），逻辑层读 maxSize：在这里映射成驼峰，
+        // 原样透传的话超限预检永远不触发（审查发现）
+        limits: d.limits ? { maxSize: d.limits.max_size ?? 0, accept: d.limits.accept || [] } : undefined,
       };
     },
     async uploadTicket({ name, key }) {
       // 对象名第一段就是上传域。对注册过的 scope（files/release/backup 等）走白名单校验；
-      // 对没注册的目录（可写根放开后，customer-avatar/、tts/ 等）后端按文件管理的写规矩放行
-      //（可写根内、保护名单除外），所以 scope 用第一段即可。
+      // 对没注册的目录后端按文件管理的写规矩放行（权限码说了算），scope 用第一段即可。
       const t = await request({
         method: "POST",
         url: ticketUrl,

@@ -217,4 +217,52 @@ describe("useUploads 按表单直传", () => {
     expect(xhrs.filter((x) => x.aborted).length).toBe(3);
     expect(xhrs.filter((x) => x.body).length).toBe(4);
   });
+
+  it("凭证还没回来就取消：不再发请求，任务记成已取消（2026-11-27 审查 P1）", async () => {
+    const { sent } = installXhr();
+    let releaseTicket;
+    const gate = new Promise((resolve) => (releaseTicket = resolve));
+    const api = {
+      async uploadTicket({ key }) {
+        await gate;
+        return { token: "t", key, uploadUrl: "https://up" };
+      },
+    };
+    const q = useUploads({ api, onSettled: () => {} });
+    q.enqueue(items("a.zip", "b.zip", "c.zip"));
+    for (let i = 0; i < 5 && q.tasks.value.filter((t) => t.status === "uploading").length < 3; i++) await tick();
+    // 三个都卡在取凭证，此时取消：abort 事件已经发过去了
+    q.cancel();
+    releaseTicket();
+    await settle(q);
+    expect(q.tasks.value.map((t) => t.status)).toEqual(["canceled", "canceled", "canceled"]);
+    expect(sent.length).toBe(0);
+  });
+
+  it("上一批已经结束，再传一批时旧记录清掉，表头只数当前批（2026-11-27 审查 P1）", async () => {
+    const api = {
+      async upload({ key }) {
+        // 挂住第一批，之后好同时放开
+      },
+    };
+    let releaseAll;
+    const gate = new Promise((resolve) => (releaseAll = resolve));
+    const q = useUploads({
+      api: { upload: async (a) => { if (a.key.includes("1")) await gate; } },
+      onSettled: () => {},
+    });
+    q.enqueue(items("1.zip", "2.zip"));
+    await tick();
+    // 1.zip 还挂着，2.zip 先传完
+    await settle(q);
+    expect(q.summary.value).toMatchObject({ total: 2, working: true, done: 1 });
+    releaseAll();
+    await settle(q);
+    expect(q.summary.value).toMatchObject({ total: 2, done: 2, working: false });
+    // 第二批入队：旧记录清掉，只剩新批
+    q.enqueue(items("9.zip"));
+    expect(q.tasks.value.map((t) => t.rel)).toEqual(["9.zip"]);
+    expect(q.summary.value).toMatchObject({ total: 1 });
+    await settle(q);
+  });
 });

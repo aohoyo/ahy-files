@@ -30,7 +30,8 @@ describe("createStorageApi 接 ahy-storage 的默认适配器", () => {
     expect(r.prefix).toBe("files/");
     expect(r.marker).toBe("m1");
     expect(r.downloadBase).toBe("https://cdn.example.com");
-    expect(r.limits).toEqual({ max_size: 1024, accept: [] });
+    // 后端蛇形 max_size 映射成逻辑层的 maxSize：透传的话超限预检永远不触发（2026-11-27 审查 P1）
+    expect(r.limits).toEqual({ maxSize: 1024, accept: [] });
     expect(r.entries).toEqual([
       { key: "files/a/", name: "a", dir: true, size: 0, mtime: 0 },
       { key: "files/x.zip", name: "x.zip", dir: false, size: 123, mtime: 1700000000 },
